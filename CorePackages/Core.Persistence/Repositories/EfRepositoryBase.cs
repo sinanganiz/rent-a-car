@@ -179,11 +179,15 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>
         var navigations = Context
             .Entry(entity)
             .Metadata.GetNavigations()
-            .Where(x => x is { IsOnDependent: false, ForeignKey.DeleteBehavior: DeleteBehavior.ClientCascade or DeleteBehavior.Cascade })
-            .ToList();
+    .Where(n =>
+        n.ForeignKey.PrincipalEntityType != n.DeclaringEntityType &&
+        (n.ForeignKey.DeleteBehavior == DeleteBehavior.Cascade ||
+         n.ForeignKey.DeleteBehavior == DeleteBehavior.ClientCascade)).ToList();
         foreach (INavigation? navigation in navigations)
         {
-            if (navigation.TargetEntityType.IsOwned())
+            var targetType = navigation.ForeignKey.PrincipalEntityType;
+
+            if (targetType.IsOwned())
                 continue;
             if (navigation.PropertyInfo == null)
                 continue;
